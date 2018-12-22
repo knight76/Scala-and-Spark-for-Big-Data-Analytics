@@ -1,0 +1,32 @@
+// Tokenization를 임포트한다
+import org.apache.spark.ml.feature.Tokenizer
+import org.apache.spark.ml.feature.RegexTokenizer
+
+// 데이터 프레임을 생성한다
+val lines = Seq(
+ (1, "Hello there, how do you like the book so far?"),
+ (2, "I am new to Machine Learning"),
+ (3, "Maybe i should get some coffee before starting"),
+ (4, "Coffee is best when you drink it hot"),
+ (5, "Book stores have coffee too so i should go to a book store")
+ )
+
+val sentenceDF = spark.createDataFrame(lines).toDF("id", "sentence")
+
+
+// Tokenizer를 초기화한다
+val tokenizer = new Tokenizer().setInputCol("sentence").setOutputCol("words")
+
+// transform 함수를 호출한다
+val wordsDF = tokenizer.transform(sentenceDF)
+
+// 컬럼 id, sentence, words 컬럼으로 구성된 데이터 프레임을 출력한다
+wordsDF.show(false)
+
+// Tokenizer 기반의 정규 표현식
+val regexTokenizer = new RegexTokenizer().setInputCol("sentence").setOutputCol("regexWords").setPattern("\\W")
+
+// transform 함수를 호출한다
+val regexWordsDF = regexTokenizer.transform(sentenceDF)
+
+regexWordsDF.show(false)

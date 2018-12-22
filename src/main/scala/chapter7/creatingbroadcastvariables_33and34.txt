@@ -1,0 +1,9 @@
+//브로드 캐스트(Broadcast) 변수 생성하기
+
+val rdd_one = sc.parallelize(Seq(1,2,3))
+
+val i = 5
+val bi = sc.broadcast(i)
+bi.value
+rdd_one.take(5)
+rdd_one.map(j => j + bi.value).take(5)

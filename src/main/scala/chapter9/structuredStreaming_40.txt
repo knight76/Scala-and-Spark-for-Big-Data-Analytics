@@ -1,0 +1,16 @@
+import java.sql.Timestamp
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
+
+// 로컬 호스트의 9999 포트에서 단어를 읽는 스트림을 생성한다
+val inputLines = spark.readStream.format("socket").option("host", "localhost").option("port", 9999).load()
+
+// inputLines을 단어로 나눈다
+val words = inputLines.as[String].flatMap(_.split(" "))
+
+// 단어 개수를 얻는다
+val wordCounts = words.groupBy("value").count()
+
+val query = wordCounts.writeStream.outputMode("complete").format("console")
+
+query.start()

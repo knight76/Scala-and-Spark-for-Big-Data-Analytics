@@ -1,0 +1,73 @@
+package chapter13
+
+import org.apache.spark.ml.classification.NaiveBayes
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.ml.Pipeline;
+import org.apache.spark.ml.PipelineStage;
+import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
+import org.apache.spark.ml.feature.{HashingTF, Tokenizer}
+import org.apache.spark.ml.linalg.Vector
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+
+object TunedNaiveBayesExample2 {
+  def main(args: Array[String]): Unit = {
+    // 스파크 세션을 생성한다
+    val spark = SparkSession
+      .builder
+      .master("local[*]")
+      .appName("Tuned NaiveBayes")
+      .getOrCreate()
+
+    // LIBSVM 포맷으로 저장된 데이터를 데이터 프레임으로 로드한다.
+    val data = spark.read.format("libsvm").load("hdfs://data/webspam_wc_normalized_trigram.svm")
+
+    // 데이터를 트레이닝 셋과 유효성 셋으로 구분한다.
+    val Array(trainingData, validationData) = data.randomSplit(Array(0.75, 0.25), seed = 12345L)
+
+    // 트레이닝 셋을 사용해 나이브 베이즈 모델을 트레이닝한다.
+    val nb = new NaiveBayes().setSmoothing(0.00001)
+    val pipeline = new Pipeline().setStages(Array(nb))
+
+    val paramGrid = new ParamGridBuilder()
+      .addGrid(nb.smoothing, Array(0.001, 0.0001))
+      .build()
+
+    val cv = new CrossValidator()
+      .setEstimator(pipeline)
+      .setEvaluator(new BinaryClassificationEvaluator)
+      .setEstimatorParamMaps(paramGrid)
+      .setNumFolds(10) // 실제로는 3 이상의 값을 사용한다.
+
+    val model = cv.fit(trainingData)
+
+    // 유효성 셋에 대한 예측을 생성하고, 일부 예를 출력한다
+    val predictions = model.transform(validationData)
+    predictions.show()
+
+    // 메트릭을 계산한다.
+    val evaluator = new MulticlassClassificationEvaluator()
+      .setLabelCol("label")
+      .setPredictionCol("prediction")
+    val evaluator1 = evaluator.setMetricName("accuracy")
+    val evaluator2 = evaluator.setMetricName("weightedPrecision")
+    val evaluator3 = evaluator.setMetricName("weightedRecall")
+    val evaluator4 = evaluator.setMetricName("f1")
+
+    // 성능 메트릭을 계산한다.
+    val accuracy = evaluator1.evaluate(predictions)
+    val precision = evaluator2.evaluate(predictions)
+    val recall = evaluator3.evaluate(predictions)
+    val f1 = evaluator4.evaluate(predictions)
+
+    // 성능 메트릭을 출력한다.
+    println("Accuracy = " + accuracy)
+    println("Precision = " + precision)
+    println("Recall = " + recall)
+    println("F1 = " + f1)
+    println(s"Test Error = ${1 - accuracy}")
+
+    spark.stop()
+  }
+}

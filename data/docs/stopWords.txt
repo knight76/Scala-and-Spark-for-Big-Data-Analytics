@@ -1,0 +1,4 @@
+Tokenization,is the process of enchanting words,from the raw text.
+If you want,to have more advance tokenization, RegexTokenizer,is a good option.
+Here,will provide a sample example on how to tokenize sentences.
+This way, you can find all matching occurrences.

@@ -1,0 +1,9 @@
+// 종료한 브로드 캐스트(Broadcast) 변수를 재사용하는 예
+
+val rdd_one = sc.parallelize(Seq(1,2,3,4,5,6))
+rdd_one.take(100)
+
+
+val k = 5
+val bk = sc.broadcast(k)
+rdd_one.map(j => j + bk.value).take(5)

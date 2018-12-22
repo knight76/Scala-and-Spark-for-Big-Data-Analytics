@@ -1,0 +1,15 @@
+// SparkContext에서 StreamingContext를 생성하기
+val ssc = new StreamingContext(sc, Seconds(5))
+
+// StreamingContext에서 DStream를 생성한다
+val twitterStream = TwitterUtils.createStream(ssc, None)
+
+// 각 RDD에 트랜스포메이션과 액션을 적용한다
+val aggStream = twitterStream.flatMap(x => x.getText.split(" ")).filter(_.startsWith("#")).map(x => (x, 1)).reduceByKey(_ + _)
+
+// 스트리밍 애플리케이션을 실행한다
+ssc.start()
+ssc.stop(false)
+
+// flatmap을 적용한다
+val wordStream = twitterStream.flatMap(x => x.getText().split(" "))

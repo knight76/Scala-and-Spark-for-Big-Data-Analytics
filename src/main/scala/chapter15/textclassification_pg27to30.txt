@@ -1,0 +1,91 @@
+// 텍스트 분류
+
+// 입력 데이터를 읽는다
+val inputText = sc.textFile("Sentiment_Analysis_Dataset10k.csv")
+
+// 데이터 프레임으로 변환한다
+val sentenceDF = inputText.map(x => (x.split(",")(0),x.split(",")(1), x.split(",")(2))).toDF("id", "label", "sentence")
+
+// tokenizer로 변환한다
+import org.apache.spark.ml.feature.Tokenizer
+
+val tokenizer = new Tokenizer().setInputCol("sentence").setOutputCol("words")
+val wordsDF = tokenizer.transform(sentenceDF)
+
+wordsDF.show(5, true)
+
+
+
+// StopWordsRemover
+import org.apache.spark.ml.feature.StopWordsRemover
+
+val remover = new StopWordsRemover().setInputCol("words").setOutputCol("filteredWords")
+
+val noStopWordsDF = remover.transform(wordsDF)
+
+noStopWordsDF.show(5, true)
+
+
+// 피쳐 벡터를 생성한다
+import org.apache.spark.ml.feature.CountVectorizer
+
+val countVectorizer = new CountVectorizer().setInputCol("filteredWords").setOutputCol("features")
+
+val countVectorizerModel = countVectorizer.fit(noStopWordsDF)
+
+val countVectorizerDF = countVectorizerModel.transform(noStopWordsDF)
+
+countVectorizerDF.show(5,true)
+
+// 데이터 프레임임에 컬럼을 추가한다
+
+val inputData=countVectorizerDF.select("label","features").withColumn("label", col("label").cast("double"))
+
+val Array(trainingData, testData) = inputData.randomSplit(Array(0.8, 0.2))
+
+// 로지스틱 회귀 모델
+import org.apache.spark.ml.classification.LogisticRegression
+
+val lr = new LogisticRegression()
+
+// 트레이닝 데이터를 핏팅한 로지스틱 회귀 모델
+var lrModel = lr.fit(trainingData)
+
+lrModel.coefficients
+
+lrModel.intercept
+
+
+// areaROC의 모델 요약을 확인한다
+
+import org.apache.spark.ml.classification.BinaryLogisticRegressionSummary
+
+val summary = lrModel.summary
+
+val bSummary = summary.asInstanceOf[BinaryLogisticRegressionSummary]
+
+
+bSummary.areaUnderROC
+
+bSummary.roc
+
+bSummary.pr.show()
+
+//모델을 사용한 두 데이터 셋에 transform을 호출한다
+
+val training = lrModel.transform(trainingData)
+
+val test = lrModel.transform(testData)
+
+// label과 prediction 컴럼을 일치하는 레코드 수를 계산한다
+
+training.filter("label == prediction").count
+
+training.filter("label != prediction").count
+
+test.filter("label == prediction").count
+
+test.filter("label != prediction").count
+
+
+

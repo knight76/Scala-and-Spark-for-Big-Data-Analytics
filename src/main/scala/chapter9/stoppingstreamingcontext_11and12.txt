@@ -1,0 +1,4 @@
+// StreamingContext 중지하기
+ssc.stop(false)
+
+ssc.stop(true, true)

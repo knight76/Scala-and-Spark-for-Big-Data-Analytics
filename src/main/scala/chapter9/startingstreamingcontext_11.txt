@@ -1,0 +1,4 @@
+//Streaming Context 시작하기
+
+ssc.start()
+

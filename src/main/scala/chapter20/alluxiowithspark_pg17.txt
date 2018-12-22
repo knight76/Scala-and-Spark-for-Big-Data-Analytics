@@ -1,0 +1,19 @@
+// 스파크에 alluxio를 사용하기
+
+// 쉘에서 alluxio 파일 시스템 설정하기
+
+sc.hadoopConfiguration.set("fs.alluxio.impl", "alluxio.hadoop.FileSystem")
+
+// alluxio에서 텍스트 파일 로드하기
+
+val alluxioFile = sc.textFile("alluxio://localhost:19998/Sentiment_Analysis_Dataset10k.csv")
+
+alluxioFile.count
+
+// 로컬 파일 시스템에서 동일한  텍스트 파일 로드하기
+
+val localFile = sc.textFile("Sentiment_Analysis_Dataset10k.csv")
+
+localFile.count
+
+

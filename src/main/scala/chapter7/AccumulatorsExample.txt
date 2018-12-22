@@ -1,0 +1,62 @@
+
+import org.apache.spark.util.AccumulatorV2
+
+case class YearPopulation(year: Int, population: Long)
+
+class StateAccumulator extends AccumulatorV2[YearPopulation, YearPopulation] {
+      // 연도를 Int 타입으로, 인구를 Long 타입으로 하는 2개의 변수를 정의한다
+      private var year = 0 
+      private var population:Long = 0L
+ 
+      // 주와 인구가 0인지 여부를 확인하는 iszero를 리턴한다
+      override def isZero: Boolean = year == 0 && population == 0L
+ 
+      // 누산기를 복사하고 새로운 누산기를 리턴한다
+      override def copy(): StateAccumulator = {  
+           val newAcc = new StateAccumulator  
+           newAcc.year =     this.year  
+           newAcc.population = this.population  
+           newAcc 
+       }
+
+       // 주와 인구를 0로 재설정한다
+       override def reset(): Unit = { year = 0 ; population = 0L }
+ 
+       // 값을 누산기에 추가한다
+       override def add(v: YearPopulation): Unit = { 
+           year += v.year 
+           population += v.population 
+       }
+ 
+       // 2개의 누산기를 병합한다
+       override def merge(other: AccumulatorV2[YearPopulation, YearPopulation]): Unit = {  
+           other match {               
+               case o: StateAccumulator => {     
+                       year += o.year 
+                       population += o.population    
+               }    
+               case _ =>   
+           } 
+        }
+
+       // 누산기 값을 접근하기 위해 스파크에서 호출할 수 있는 함수
+       override def value: YearPopulation = YearPopulation(year, population)
+}
+
+val statePopAcc = new StateAccumulator
+sc.register(statePopAcc, "statePopAcc")
+
+val statesPopulationRDD = sc.textFile("statesPopulation.csv").filter(_.split(",")(0) != "State")
+statesPopulationRDD.take(10)
+
+statesPopulationRDD.map(x => {
+	val toks = x.split(",")
+	val year = toks(1).toInt
+	val pop = toks(2).toLong
+	statePopAcc.add(YearPopulation(year, pop))
+	x
+}).count
+
+statePopAcc.value
+
+

@@ -1,0 +1,53 @@
+//CountVectorizer
+import org.apache.spark.ml.feature.CountVectorizer
+
+//불용서 삭제
+import org.apache.spark.ml.feature.StopWordsRemover
+
+//토큰 처리
+import org.apache.spark.ml.feature.Tokenizer
+
+// 데이터 프레임을 생성한다
+val lines = Seq(
+ (1, "Hello there, how do you like the book so far?"),
+ (2, "I am new to Machine Learning"),
+ (3, "Maybe i should get some coffee before starting"),
+ (4, "Coffee is best when you drink it hot"),
+ (5, "Book stores have coffee too so i should go to a book store")
+ )
+
+val sentenceDF = spark.createDataFrame(lines).toDF("id", "sentence")
+
+
+// Tokenizer를 초기화한다
+val tokenizer = new Tokenizer().setInputCol("sentence").setOutputCol("words")
+
+// transform 함수를 호출한다
+val wordsDF = tokenizer.transform(sentenceDF)
+
+// id, sentence, words 컬럼으로 구성된 데이터 프레임을 출력한다
+wordsDF.show(false)
+
+// StopWordsRemoval를 초기화한다
+val remover = new StopWordsRemover().setInputCol("words").setOutputCol("filteredWords")
+
+// transform 함수를 호출한다
+val noStopWordsDF = remover.transform(wordsDF)
+
+// 데이터 프레임을 출력한다
+noStopWordsDF.show(false)
+
+// 데이터 프레임의 sentence 컬럼에서 필터링된 단어만 출력한다
+noStopWordsDF.select("sentence", "filteredWords").show(5,false)
+
+
+val countVectorizer = new CountVectorizer().setInputCol("filteredWords").setOutputCol("features")
+
+// fit 함수를 호출한다
+val countVectorizerModel = countVectorizer.fit(noStopWordsDF)
+
+// transform 함수를 호출한다
+val countVectorizerDF = countVectorizerModel.transform(noStopWordsDF)
+
+// 데이터 프레임을 출력한다
+countVectorizerDF.show(false)

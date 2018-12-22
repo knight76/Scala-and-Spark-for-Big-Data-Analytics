@@ -1,0 +1,54 @@
+//Word 2 Vec
+import org.apache.spark.ml.feature.Word2Vec
+
+// StopWordsRemover를 임포트한다
+import org.apache.spark.ml.feature.StopWordsRemover
+
+// Tokenizer를 임포트한다
+import org.apache.spark.ml.feature.Tokenizer
+
+// 데이터 프레임을 생성한다
+val lines = Seq(
+ (1, "Hello there, how do you like the book so far?"),
+ (2, "I am new to Machine Learning"),
+ (3, "Maybe i should get some coffee before starting"),
+ (4, "Coffee is best when you drink it hot"),
+ (5, "Book stores have coffee too so i should go to a book store")
+ )
+
+val sentenceDF = spark.createDataFrame(lines).toDF("id", "sentence")
+
+
+// Tokenizer를 생성한다
+val tokenizer = new Tokenizer().setInputCol("sentence").setOutputCol("words")
+
+// transform를 호출한다
+val wordsDF = tokenizer.transform(sentenceDF)
+
+// 컬럼 id, sentence, words 컬럼으로 구성된 데이터 프레임을 출력한다
+wordsDF.show(false)
+
+// StopWordsRemoval을 생성한다
+val remover = new StopWordsRemover().setInputCol("words").setOutputCol("filteredWords")
+
+// transform 함수를 호출한다
+val noStopWordsDF = remover.transform(wordsDF)
+
+// 데이터 프레임을 출력한다
+noStopWordsDF.show(false)
+
+// sentence와 필터링된 단어(filteredWords)만 보여주는 데이터 프레임을 출력한다
+noStopWordsDF.select("sentence", "filteredWords").show(5,false)
+
+
+// Word2Vec을 초기화한다
+val word2Vec = new Word2Vec().setInputCol("words").setOutputCol("wordvector").setVectorSize(3).setMinCount(0)
+
+// 피팅한다
+val word2VecModel = word2Vec.fit(noStopWordsDF)
+
+// transform를 호출한다
+val word2VecDF = word2VecModel.transform(noStopWordsDF)
+
+// 데이터 프레임을 출력한다
+word2VecDF.show(false)
